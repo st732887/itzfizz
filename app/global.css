@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --lime:   #d1f542;
+  --teal:   #42f5c8;
+  --orange: #fa7228;
+  --sky:    #6ac9ff;
+  --dark:   #0d0d0d;
+  --road:   #141414;
+  --track:  #c8c8c0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+/* ── ROAD DASHED CENTER LINE ── */
+.road-center-line {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.18) 0px,
+    rgba(255, 255, 255, 0.18) 50px,
+    transparent 50px,
+    transparent 110px
+  );
+}
+
+/* ── CHECKER CURB ── */
+.curb-checker {
+  background: repeating-linear-gradient(
+    90deg,
+    #ffffff 0px,
+    #ffffff 24px,
+    #1a1a1a 24px,
+    #1a1a1a 48px
+  );
+}
+
+/* ── TRAIL GLOW ── */
+.trail-glow {
+  box-shadow: 0 0 30px 8px rgba(209, 245, 66, 0.4);
+}
+
+/* ── SCROLL HINT ANIMATION ── */
+@keyframes scrollDrop {
+  0%   { transform: scaleY(0); transform-origin: top; }
+  45%  { transform: scaleY(1); transform-origin: top; }
+  55%  { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+.scroll-hint-bar {
+  animation: scrollDrop 1.6s ease-in-out infinite;
+}
+
+/* ── STAT CARD BASE ── */
+.stat-card {
+  transition: box-shadow 0.3s ease;
+}
+.stat-card:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* ── HEADLINE LETTER ── */
+.hl-letter {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+/* ── CAR IMAGE ── */
+.car-img {
+  will-change: transform;
+  image-rendering: auto;
+}
+
+/* ── NAV BLEND ── */
+.nav-blend {
+  mix-blend-mode: difference;
+}

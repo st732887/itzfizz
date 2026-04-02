@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ITZFIZZ — Scroll Hero</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --lime  : #d1f542;
+      --sky   : #6ac9ff;
+      --orange: #fa7228;
+      --dark  : #0d0d0d;
+      --track : #c8c8c0;
+      --road  : #141414;
+    }
+
+    html  { scroll-behavior:auto; }
+    body  { font-family:'Syne',sans-serif; background:var(--dark); color:#fff; overflow-x:hidden; }
+
+    /* ─── NAV ─── */
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.25rem 3rem;
+      mix-blend-mode:difference;
+    }
+    .logo { font-weight:800; font-size:1.05rem; letter-spacing:.18em; color:#fff; }
+    .nav-links { display:flex; gap:2rem; }
+    .nav-links a {
+      font-family:'DM Mono',monospace; font-size:.68rem;
+      color:rgba(255,255,255,.7); text-decoration:none;
+      letter-spacing:.12em; text-transform:uppercase;
+      transition:opacity .2s;
+    }
+    .nav-links a:hover { opacity:1; color:#fff; }
+
+    /* ─── SCROLL SECTION ─── */
+    #scroll-section { height:300vh; position:relative; }
+
+    /* ─── STICKY TRACK ─── */
+    #track {
+      position:sticky; top:0; height:100vh; width:100%;
+      overflow:hidden; background:var(--track);
+      display:flex; flex-direction:column;
+    }
+
+    /* ─── UPPER AREA (grey) ─── */
+    #upper { flex:1; position:relative; min-height:62vh; }
+
+    /* ─── STAT CARDS ─── */
+    .stat-card {
+      position:absolute;
+      border-radius:16px;
+      padding:1.6rem 1.75rem;
+      min-width:210px;
+      opacity:0;
+      transform:translateY(28px);
+      transition:box-shadow .3s;
+    }
+    .stat-card:hover { box-shadow:0 20px 60px rgba(0,0,0,.22); }
+    .stat-lime   { background:var(--lime);    color:#111; }
+    .stat-dark   { background:#222;           color:#fff; }
+    .stat-sky    { background:var(--sky);     color:#111; }
+    .stat-orange { background:var(--orange);  color:#111; }
+
+    #s1 { top:8%;    right:36%; }
+    #s2 { top:8%;    right:8%;  }
+    #s3 { bottom:8%; right:36%; }
+    #s4 { bottom:8%; right:8%;  }
+
+    .s-tag {
+      font-family:'DM Mono',monospace;
+      font-size:.55rem; letter-spacing:.14em; text-transform:uppercase;
+      opacity:.45; margin-bottom:.6rem;
+    }
+    .stat-dark .s-tag { opacity:.38; color:#fff; }
+
+    .s-pct {
+      font-weight:800; font-size:clamp(2rem,3.5vw,3rem);
+      line-height:1; display:block;
+    }
+    .stat-dark .s-pct { color:#fff; }
+
+    .s-label {
+      font-family:'DM Mono',monospace;
+      font-size:.67rem; line-height:1.6; letter-spacing:.04em;
+      opacity:.6; margin-top:.5rem;
+    }
+    .stat-dark .s-label { color:rgba(255,255,255,.55); }
+
+    /* ─── CURB ─── */
+    .curb {
+      width:100%; height:12px;
+      background:repeating-linear-gradient(
+        90deg, #fff 0,#fff 24px, #1a1a1a 24px, #1a1a1a 48px
+      );
+      flex-shrink:0;
+    }
+    .curb-flip { transform:scaleX(-1); }
+
+    /* ─── ROAD ─── */
+    #road {
+      width:100%; height:38vh;
+      background:var(--road);
+      position:relative; overflow:hidden;
+      flex-shrink:0;
+    }
+
+    /* center dashes */
+    #road::before {
+      content:'';
+      position:absolute; top:50%; left:0; right:0; height:3px;
+      transform:translateY(-50%);
+      background:repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,.18) 0,rgba(255,255,255,.18) 50px,
+        transparent 50px, transparent 110px
+      );
+      pointer-events:none; z-index:1;
+    }
+
+    /* trail */
+    #trail {
+      position:absolute; top:0; left:0; bottom:0; width:0; z-index:2;
+      background:linear-gradient(90deg,#d1f542,#a8d400);
+      box-shadow:0 0 30px 8px rgba(209,245,66,.38);
+      opacity:.84;
+    }
+
+    /* headline on road */
+    #headline {
+      position:absolute; inset:0; z-index:3;
+      display:flex; align-items:center; justify-content:center;
+      pointer-events:none; user-select:none;
+      font-weight:800; letter-spacing:.22em; color:#111;
+      font-size:clamp(2.8rem,8.5vw,8rem);
+    }
+    .hl {
+      display:inline-block; opacity:.06;
+      transform:translateY(4px);
+      transition:opacity .2s ease, transform .2s ease;
+      will-change:opacity,transform;
+    }
+
+    /* car */
+    #car {
+      position:absolute; top:0; bottom:0; left:0;
+      display:flex; align-items:center;
+      width:22vw; min-width:160px; z-index:10;
+      will-change:transform;
+    }
+    #car svg { width:100%; height:auto; display:block; }
+
+    /* pct */
+    #pct {
+      position:absolute; right:1.5rem; top:50%;
+      transform:translateY(-50%);
+      font-family:'DM Mono',monospace;
+      font-size:.6rem; letter-spacing:.18em;
+      color:rgba(255,255,255,.28); z-index:5; select:none;
+    }
+
+    /* ─── SCROLL HINT ─── */
+    #hint {
+      position:absolute; bottom:1.8rem; left:50%; transform:translateX(-50%);
+      display:flex; flex-direction:column; align-items:center; gap:.5rem;
+      z-index:30; opacity:0;
+    }
+    #hint span {
+      font-family:'DM Mono',monospace; font-size:.58rem;
+      letter-spacing:.22em; text-transform:uppercase; color:#333;
+    }
+    .hint-bar {
+      width:1px; height:44px; background:#333;
+      animation:scrollDrop 1.6s ease-in-out infinite;
+    }
+    @keyframes scrollDrop {
+      0%  { transform:scaleY(0); transform-origin:top; }
+      45% { transform:scaleY(1); transform-origin:top; }
+      55% { transform:scaleY(1); transform-origin:bottom; }
+      100%{ transform:scaleY(0); transform-origin:bottom; }
+    }
+
+    /* ─── AFTER SECTION ─── */
+    #after {
+      min-height:70vh; background:var(--dark);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:1.25rem; padding:7rem 2rem;
+    }
+    .after-badge {
+      display:inline-block; padding:.35rem 1rem;
+      border:1px solid rgba(255,255,255,.14); border-radius:100px;
+      font-family:'DM Mono',monospace; font-size:.62rem;
+      letter-spacing:.18em; color:rgba(255,255,255,.4); text-transform:uppercase;
+    }
+    #after h2 {
+      font-weight:800; text-align:center; line-height:1.15;
+      font-size:clamp(2rem,4.5vw,3.5rem); color:#fff;
+    }
+    #after p {
+      font-family:'DM Mono',monospace; color:rgba(255,255,255,.38);
+      font-size:.8rem; letter-spacing:.06em; text-align:center; line-height:1.8;
+    }
+    .after-grid {
+      margin-top:1.25rem;
+      display:grid; grid-template-columns:repeat(3,1fr); gap:1.25rem;
+    }
+    .after-pill {
+      text-align:center; padding:1rem 1.5rem;
+      border-radius:12px; border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.03);
+    }
+    .after-pill strong {
+      display:block; font-size:1.8rem; font-weight:800; color:var(--lime);
+    }
+    .after-pill span {
+      font-family:'DM Mono',monospace; font-size:.62rem;
+      color:rgba(255,255,255,.38); text-transform:uppercase;
+      letter-spacing:.1em; margin-top:.3rem; display:block;
+    }
+
+    /* reveal class for after-section */
+    .reveal { opacity:0; transform:translateY(36px); transition:opacity .7s ease,transform .7s ease; }
+    .reveal.visible { opacity:1; transform:none; }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <span class="logo">ITZFIZZ</span>
+  <div class="nav-links">
+    <a href="#">Work</a>
+    <a href="#">Services</a>
+    <a href="#">About</a>
+    <a href="#">Contact</a>
+  </div>
+</nav>
+
+<!-- ─── SCROLL SECTION ─── -->
+<div id="scroll-section">
+  <div id="track">
+
+    <!-- upper grey area with stat cards -->
+    <div id="upper">
+      <!-- top-right stats -->
+      <div class="stat-card stat-lime" id="s1">
+        <div class="s-tag">Pick-up</div>
+        <span class="s-pct">58%</span>
+        <p class="s-label">Increase in pick-up<br>point utilisation</p>
+      </div>
+      <div class="stat-card stat-dark" id="s2">
+        <div class="s-tag">Growth</div>
+        <span class="s-pct">27%</span>
+        <p class="s-label">Increase in repeat<br>customer orders</p>
+      </div>
+
+      <!-- bottom stats (positioned relative to upper+road) -->
+      <div class="stat-card stat-sky" id="s3">
+        <div class="s-tag">Support</div>
+        <span class="s-pct">23%</span>
+        <p class="s-label">Decrease in customer<br>phone calls</p>
+      </div>
+      <div class="stat-card stat-orange" id="s4">
+        <div class="s-tag">NPS</div>
+        <span class="s-pct">40%</span>
+        <p class="s-label">Reduction in delivery<br>complaints</p>
+      </div>
+
+      <!-- scroll hint -->
+      <div id="hint">
+        <span>scroll</span>
+        <div class="hint-bar"></div>
+      </div>
+    </div>
+
+    <!-- top curb -->
+    <div class="curb"></div>
+
+    <!-- ─── ROAD ─── -->
+    <div id="road">
+      <div id="trail"></div>
+
+      <!-- HEADLINE on road -->
+      <div id="headline" aria-label="Welcome ITZFIZZ">
+        <!-- letters injected by JS -->
+      </div>
+
+      <!-- CAR -->
+      <div id="car">
+        <!--
+          McLaren 720S top-view SVG
+          Nose faces RIGHT so car drives left → right
+        -->
+        <svg viewBox="0 0 340 160" xmlns="http://www.w3.org/2000/svg"
+             style="filter:drop-shadow(0 10px 28px rgba(0,0,0,.72))">
+          <!-- body shell -->
+          <ellipse cx="170" cy="80" rx="156" ry="44" fill="#e86810"/>
+          <ellipse cx="170" cy="80" rx="148" ry="36" fill="#f07818" opacity=".55"/>
+          <!-- specular -->
+          <ellipse cx="185" cy="72" rx="60" ry="14" fill="#ffa040" opacity=".25"/>
+
+          <!-- nose cone -->
+          <path d="M322 80 Q342 64 338 80 Q342 96 322 80Z" fill="#cc5800"/>
+
+          <!-- front splitter wings -->
+          <path d="M308 66 L332 50 L337 57 L314 71Z" fill="#b24800"/>
+          <path d="M308 94 L332 110 L337 103 L314 89Z" fill="#b24800"/>
+
+          <!-- tail -->
+          <path d="M20 80 Q2 64 6 80 Q2 96 20 80Z" fill="#a04500"/>
+          <!-- rear diffuser -->
+          <path d="M24 60 L4 47 L9 41 L28 56Z" fill="#8c3c00"/>
+          <path d="M24 100 L4 113 L9 119 L28 104Z" fill="#8c3c00"/>
+          <!-- rear wing blade -->
+          <rect x="6" y="74" width="14" height="12" rx="2" fill="#7a3400"/>
+
+          <!-- cockpit outer -->
+          <path d="M152 48 Q176 26 216 32 Q250 38 256 58 Q260 80 250 100 Q236 118 208 120 Q176 122 153 102 Q146 90 146 80 Q146 66 152 48Z" fill="#111827"/>
+          <!-- cockpit glass -->
+          <path d="M158 52 Q180 32 214 38 Q244 44 248 62 Q252 80 242 100 Q228 114 208 116 Q178 118 160 100 Q154 88 154 80 Q154 68 158 52Z" fill="#0a0e17" opacity=".92"/>
+          <!-- windscreen glint -->
+          <path d="M163 56 Q184 38 212 44 Q228 56 222 70 Q202 54 163 56Z" fill="rgba(255,255,255,.13)"/>
+          <!-- side window strips -->
+          <path d="M158 96 Q170 110 190 114 Q205 114 215 108 L210 100 Q196 106 180 105 Q167 103 158 96Z" fill="rgba(255,255,255,.06)"/>
+
+          <!-- mirrors -->
+          <path d="M174 48 L155 36 L160 30 L178 44Z" fill="#cc5800"/>
+          <path d="M174 112 L155 124 L160 130 L178 116Z" fill="#cc5800"/>
+
+          <!-- front wheels -->
+          <ellipse cx="264" cy="47" rx="16" ry="20" fill="#161616"/>
+          <ellipse cx="264" cy="47" rx="9" ry="12" fill="#2e2e2e"/>
+          <ellipse cx="264" cy="47" rx="3.5" ry="4.5" fill="#444"/>
+          <!-- spokes -->
+          <line x1="264" y1="35" x2="264" y2="59" stroke="#444" stroke-width="1.2"/>
+          <line x1="252" y1="47" x2="276" y2="47" stroke="#444" stroke-width="1.2"/>
+          <line x1="256" y1="39" x2="272" y2="55" stroke="#444" stroke-width="1.2"/>
+          <line x1="272" y1="39" x2="256" y2="55" stroke="#444" stroke-width="1.2"/>
+
+          <ellipse cx="264" cy="113" rx="16" ry="20" fill="#161616"/>
+          <ellipse cx="264" cy="113" rx="9" ry="12" fill="#2e2e2e"/>
+          <ellipse cx="264" cy="113" rx="3.5" ry="4.5" fill="#444"/>
+          <line x1="264" y1="101" x2="264" y2="125" stroke="#444" stroke-width="1.2"/>
+          <line x1="252" y1="113" x2="276" y2="113" stroke="#444" stroke-width="1.2"/>
+          <line x1="256" y1="105" x2="272" y2="121" stroke="#444" stroke-width="1.2"/>
+          <line x1="272" y1="105" x2="256" y2="121" stroke="#444" stroke-width="1.2"/>
+
+          <!-- rear wheels (larger) -->
+          <ellipse cx="88" cy="44" rx="20" ry="25" fill="#161616"/>
+          <ellipse cx="88" cy="44" rx="12" ry="15" fill="#2e2e2e"/>
+          <ellipse cx="88" cy="44" rx="4.5" ry="5.5" fill="#444"/>
+          <line x1="88" y1="29" x2="88" y2="59" stroke="#444" stroke-width="1.5"/>
+          <line x1="73" y1="44" x2="103" y2="44" stroke="#444" stroke-width="1.5"/>
+          <line x1="77" y1="33" x2="99" y2="55" stroke="#444" stroke-width="1.5"/>
+          <line x1="99" y1="33" x2="77" y2="55" stroke="#444" stroke-width="1.5"/>
+
+          <ellipse cx="88" cy="116" rx="20" ry="25" fill="#161616"/>
+          <ellipse cx="88" cy="116" rx="12" ry="15" fill="#2e2e2e"/>
+          <ellipse cx="88" cy="116" rx="4.5" ry="5.5" fill="#444"/>
+          <line x1="88" y1="101" x2="88" y2="131" stroke="#444" stroke-width="1.5"/>
+          <line x1="73" y1="116" x2="103" y2="116" stroke="#444" stroke-width="1.5"/>
+          <line x1="77" y1="105" x2="99" y2="127" stroke="#444" stroke-width="1.5"/>
+          <line x1="99" y1="105" x2="77" y2="127" stroke="#444" stroke-width="1.5"/>
+
+          <!-- headlights (lime) -->
+          <path d="M316 73 Q332 67 336 73 Q332 79 316 77Z" fill="#d1f542" opacity=".95"/>
+
+          <!-- tail lights (red) -->
+          <path d="M26 73 Q10 67 7 73 Q10 79 26 77Z" fill="#ff2020" opacity=".88"/>
+
+          <!-- livery stripe -->
+          <path d="M232 42 L110 44 L95 80 L110 116 L232 118"
+                fill="none" stroke="#d1f542" stroke-width="2.5"
+                stroke-linecap="round" opacity=".5"/>
+
+          <!-- brake duct vents -->
+          <rect x="242" y="55" width="14" height="4" rx="1.5" fill="#111" opacity=".65"/>
+          <rect x="242" y="101" width="14" height="4" rx="1.5" fill="#111" opacity=".65"/>
+        </svg>
+      </div>
+
+      <span id="pct">00%</span>
+    </div><!-- /#road -->
+
+    <!-- bottom curb -->
+    <div class="curb curb-flip"></div>
+
+  </div><!-- /#track -->
+</div><!-- /#scroll-section -->
+
+<!-- ─── AFTER SECTION ─── -->
+<div id="after">
+  <span class="after-badge reveal">Case Study — 2024</span>
+  <h2 class="reveal">Results that move<br>at full speed.</h2>
+  <p class="reveal">
+    ITZFIZZ helped brands accelerate their logistics<br>
+    experience from 0 to 100.
+  </p>
+  <div class="after-grid reveal">
+    <div class="after-pill">
+      <strong>58%</strong><span>Pick-up growth</span>
+    </div>
+    <div class="after-pill">
+      <strong>23%</strong><span>Call reduction</span>
+    </div>
+    <div class="after-pill">
+      <strong>40%</strong><span>Fewer complaints</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── REGISTER PLUGIN ── */
+gsap.registerPlugin(ScrollTrigger);
+
+/* ── HEADLINE LETTERS ── */
+const WORD = "WELCOME\u00A0ITZFIZZ";
+const hlWrap = document.getElementById("headline");
+const letters = [];
+[...WORD].forEach(ch => {
+  const s = document.createElement("span");
+  s.className = "hl";
+  s.textContent = ch;
+  if (ch === "\u00A0") s.style.width = "0.45em";
+  hlWrap.appendChild(s);
+  letters.push(s);
+});
+
+/* ── ELEMENTS ── */
+const car   = document.getElementById("car");
+const trail = document.getElementById("trail");
+const pctEl = document.getElementById("pct");
+const road  = document.getElementById("road");
+const hint  = document.getElementById("hint");
+const stats = [
+  document.getElementById("s1"),
+  document.getElementById("s2"),
+  document.getElementById("s3"),
+  document.getElementById("s4"),
+];
+
+/* stat card thresholds (0..1) */
+const THRESHOLDS = [0.20, 0.42, 0.62, 0.78];
+
+/* ── INTRO ANIMATION ── */
+const intro = gsap.timeline({ defaults:{ ease:"expo.out" } });
+intro
+  .fromTo(hint, {opacity:0,y:10},{opacity:1,y:0,duration:.8,delay:1})
+  .set(stats, {opacity:0,y:28}, 0);
+
+/* ── SCROLL TRIGGER ── */
+ScrollTrigger.create({
+  trigger: "#scroll-section",
+  start: "top top",
+  end: "bottom top",
+  pin: "#track",
+  scrub: 1.1,
+
+  onUpdate(self) {
+    const p = self.progress;
+
+    /* ── CAR POSITION ── */
+    const rw  = road.offsetWidth;
+    const cw  = car.offsetWidth;
+    const endX = rw - cw;
+    const x   = endX * p;
+
+    gsap.set(car,   { x });
+    gsap.set(trail, { width: Math.max(0, x + cw * 0.55) });
+
+    pctEl.textContent = String(Math.round(p * 100)).padStart(2,"0") + "%";
+
+    /* ── LETTER REVEAL ── */
+    const rRect  = road.getBoundingClientRect();
+    const carMid = x + cw * 0.65;
+
+    letters.forEach(el => {
+      const lr = el.getBoundingClientRect();
+      const mid = lr.left + lr.width / 2 - rRect.left;
+      if (carMid >= mid) {
+        el.style.opacity   = "1";
+        el.style.transform = "translateY(0)";
+      } else {
+        el.style.opacity   = "0.06";
+        el.style.transform = "translateY(4px)";
+      }
+    });
+
+    /* ── HIDE HINT ── */
+    if (p > 0.04) gsap.to(hint, {opacity:0,duration:.3,overwrite:"auto"});
+
+    /* ── STAT CARDS ── */
+    stats.forEach((card, i) => {
+      const th = THRESHOLDS[i];
+      const t  = p >= th ? Math.min((p - th) / 0.14, 1) : 0;
+      card.style.opacity   = t;
+      card.style.transform = `translateY(${(1 - t) * 28}px)`;
+    });
+  }
+});
+
+/* ── AFTER SECTION REVEAL ── */
+const revealEls = document.querySelectorAll(".reveal");
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add("visible");
+      obs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.15 });
+revealEls.forEach((el, i) => {
+  el.style.transitionDelay = `${i * 0.12}s`;
+  obs.observe(el);
+});
+
+/* ── RESIZE ── */
+window.addEventListener("resize", () => ScrollTrigger.refresh());
+</script>
+</body>
+</html>
